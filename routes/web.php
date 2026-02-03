@@ -1,17 +1,20 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SocialController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
+    if (Auth::check()) {
+        return redirect()->route('dashboard');
+    }
+
+    // User is not logged in, redirect to login
+    return redirect()->route('login');
+
 });
 
 Route::get('/dashboard', function () {
@@ -24,4 +27,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
+Route::get('/auth/{provider}/redirect', [SocialController::class, 'redirect'])->name('social.redirect');
+Route::get('/auth/{provider}/callback', [SocialController::class, 'callback'])->name('social.callback');
+
+require __DIR__ . '/auth.php';
