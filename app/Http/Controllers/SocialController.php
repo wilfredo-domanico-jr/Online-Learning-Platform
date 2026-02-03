@@ -29,11 +29,13 @@ class SocialController extends Controller
         }
 
         // Check if email already exists
-        $user = User::where('email', $socialUser->getEmail())->first();
+        $user = User::where('email', $socialUser->getEmail())
+            ->where('social_provider', $provider)
+            ->first();
 
         if ($user) {
 
-            return to_route("register")->withErrors("This email is already registered. Please login instead.");
+            return to_route("register")->withErrors("This email for this provider is already registered. Please login instead.");
         }
 
         // Create new user with random password
