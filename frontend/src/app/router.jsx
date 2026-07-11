@@ -8,6 +8,13 @@ import LoginPage from '../features/auth/LoginPage';
 import RegisterPage from '../features/auth/RegisterPage';
 import OAuthCallbackPage from '../features/auth/OAuthCallbackPage';
 import DashboardPage from '../features/dashboard/DashboardPage';
+import CourseListPage from '../features/catalog/CourseListPage';
+import CourseDetailPage from '../features/catalog/CourseDetailPage';
+import ApplyPage from '../features/instructor/ApplyPage';
+import InstructorCoursesPage from '../features/instructor/InstructorCoursesPage';
+import CourseEditorPage from '../features/instructor/CourseEditorPage';
+import ApplicationsQueuePage from '../features/admin/ApplicationsQueuePage';
+import CourseModerationPage from '../features/admin/CourseModerationPage';
 
 export const router = createBrowserRouter([
     {
@@ -22,6 +29,8 @@ export const router = createBrowserRouter([
     {
         element: <AppLayout />,
         children: [
+            { path: '/courses', element: <CourseListPage /> },
+            { path: '/courses/:slug', element: <CourseDetailPage /> },
             {
                 path: '/dashboard',
                 element: (
@@ -30,8 +39,48 @@ export const router = createBrowserRouter([
                     </RequireAuth>
                 ),
             },
+            {
+                path: '/instructor/apply',
+                element: (
+                    <RequireAuth>
+                        <ApplyPage />
+                    </RequireAuth>
+                ),
+            },
+            {
+                path: '/instructor/courses',
+                element: (
+                    <RequireAuth roles={['instructor']}>
+                        <InstructorCoursesPage />
+                    </RequireAuth>
+                ),
+            },
+            {
+                path: '/instructor/courses/:courseId',
+                element: (
+                    <RequireAuth roles={['instructor']}>
+                        <CourseEditorPage />
+                    </RequireAuth>
+                ),
+            },
+            {
+                path: '/admin/instructor-applications',
+                element: (
+                    <RequireAuth roles={['admin']}>
+                        <ApplicationsQueuePage />
+                    </RequireAuth>
+                ),
+            },
+            {
+                path: '/admin/courses',
+                element: (
+                    <RequireAuth roles={['admin']}>
+                        <CourseModerationPage />
+                    </RequireAuth>
+                ),
+            },
         ],
     },
-    { path: '/', element: <Navigate to="/dashboard" replace /> },
+    { path: '/', element: <Navigate to="/courses" replace /> },
     { path: '*', element: <NotFoundPage /> },
 ]);

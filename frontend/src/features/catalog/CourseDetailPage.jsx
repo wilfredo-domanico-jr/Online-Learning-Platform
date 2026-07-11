@@ -1,0 +1,88 @@
+import { useQuery } from '@tanstack/react-query';
+import { useParams } from 'react-router-dom';
+import { fetchCourse, fetchCourseCurriculum } from '../../api/catalog';
+
+export default function CourseDetailPage() {
+    const { slug } = useParams();
+
+    const { data: course, isLoading } = useQuery({
+        queryKey: ['courses', slug],
+        queryFn: () => fetchCourse(slug),
+    });
+
+    const { data: curriculum } = useQuery({
+        queryKey: ['courses', slug, 'curriculum'],
+        queryFn: () => fetchCourseCurriculum(slug),
+        enabled: !!course,
+    });
+
+    if (isLoading) return <p className="text-gray-500">Loading…</p>;
+    if (!course) return <p className="text-gray-500">Course not found.</p>;
+
+    return (
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+                <h1 className="text-2xl font-bold text-gray-900">{course.title}</h1>
+                {course.subtitle && <p className="mt-1 text-gray-600">{course.subtitle}</p>}
+                <p className="mt-1 text-sm text-gray-500">
+                    By {course.instructor?.name}
+                    {course.category && <> · {course.category.name}</>}
+                </p>
+
+                {course.status !== 'published' && (
+                    <p className="mt-3 inline-block rounded bg-amber-100 px-2 py-1 text-sm text-amber-800">
+                        Preview mode — status: {course.status.replace('_', ' ')}
+                        {course.rejection_reason && <> — {course.rejection_reason}</>}
+                    </p>
+                )}
+
+                {course.description && (
+                    <div className="prose mt-6 max-w-none whitespace-pre-line text-gray-700">
+                        {course.description}
+                    </div>
+                )}
+
+                <h2 className="mt-8 mb-3 text-lg font-semibold text-gray-900">Curriculum</h2>
+                <div className="space-y-4">
+                    {curriculum?.sections.map((section) => (
+                        <div key={section.id} className="rounded border bg-white">
+                            <div className="border-b bg-gray-50 px-4 py-2 font-medium text-gray-900">
+                                {section.title}
+                            </div>
+                            <ul className="divide-y">
+                                {section.lessons.map((lesson) => (
+                                    <li key={lesson.id} className="flex items-center justify-between px-4 py-2 text-sm">
+                                        <span className="text-gray-700">
+                                            {lesson.title}{' '}
+                                            <span className="text-gray-400">({lesson.type})</span>
+                                        </span>
+                                        {lesson.locked ? (
+                                            <span className="text-gray-400">🔒</span>
+                                        ) : (
+                                            <span className="text-green-600">▶ Preview</span>
+                                        )}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <aside className="rounded-lg border bg-white p-4 shadow-sm">
+                <div className="mb-4 aspect-video rounded bg-gray-100" />
+                <p className="text-2xl font-bold text-gray-900">
+                    {course.price > 0 ? `$${course.price.toFixed(2)}` : 'Free'}
+                </p>
+                <button
+                    type="button"
+                    className="mt-4 w-full rounded bg-gray-900 py-2 text-white"
+                    disabled
+                    title="Enrollment lands in Phase 2"
+                >
+                    Enroll
+                </button>
+            </aside>
+        </div>
+    );
+}
