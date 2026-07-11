@@ -15,6 +15,8 @@ import InstructorCoursesPage from '../features/instructor/InstructorCoursesPage'
 import CourseEditorPage from '../features/instructor/CourseEditorPage';
 import ApplicationsQueuePage from '../features/admin/ApplicationsQueuePage';
 import CourseModerationPage from '../features/admin/CourseModerationPage';
+import MyLearningPage from '../features/learning/MyLearningPage';
+import CoursePlayerPage from '../features/learning/CoursePlayerPage';
 
 export const router = createBrowserRouter([
     {
@@ -36,6 +38,22 @@ export const router = createBrowserRouter([
                 element: (
                     <RequireAuth>
                         <DashboardPage />
+                    </RequireAuth>
+                ),
+            },
+            {
+                path: '/my-learning',
+                element: (
+                    <RequireAuth>
+                        <MyLearningPage />
+                    </RequireAuth>
+                ),
+            },
+            {
+                path: '/learn/:slug',
+                element: (
+                    <RequireAuth>
+                        <CoursePlayerPage />
                     </RequireAuth>
                 ),
             },

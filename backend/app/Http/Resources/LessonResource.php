@@ -16,11 +16,12 @@ class LessonResource extends JsonResource
     public function toArray(Request $request): array
     {
         // Full lesson content (video/article/attachments) is only sent when the
-        // requester owns the course (or is an admin) or the lesson is a free
-        // preview — set by the controller via a request attribute so nested
-        // resources don't need to re-derive course ownership per lesson.
-        // Enrollment-based unlocking arrives in Phase 2.
+        // requester owns the course (or is an admin), is enrolled, or the
+        // lesson is a free preview — set by the controller via a request
+        // attribute so nested resources don't need to re-derive course
+        // ownership/enrollment per lesson.
         $canViewContent = $this->is_previewable || $request->attributes->get('can_view_locked_lesson_content', false);
+        $progress = $request->attributes->get('lesson_progress_map')?->get($this->id);
 
         return [
             'id' => $this->id,
@@ -31,6 +32,8 @@ class LessonResource extends JsonResource
             'is_previewable' => $this->is_previewable,
             'duration_seconds' => $this->duration_seconds,
             'locked' => ! $canViewContent,
+            'completed' => $progress['completed'] ?? false,
+            'last_position_seconds' => $progress['last_position_seconds'] ?? null,
             'video' => $this->when($canViewContent, fn () => $this->videoDetail ? [
                 'url' => $this->videoDetail->url(),
                 'duration_seconds' => $this->videoDetail->duration_seconds,

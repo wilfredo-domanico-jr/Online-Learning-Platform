@@ -1,23 +1,41 @@
-import { useQuery } from '@tanstack/react-query';
-import { useParams } from 'react-router-dom';
-import { fetchCourse, fetchCourseCurriculum } from '../../api/catalog';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate, useParams } from 'react-router-dom';
+import { fetchCourse } from '../../api/catalog';
+import { enrollInCourse, fetchLearnCurriculum } from '../../api/learning';
+import { useAuthUser } from '../auth/useAuth';
+import { generalError } from '../../lib/apiErrors';
 
 export default function CourseDetailPage() {
     const { slug } = useParams();
+    const navigate = useNavigate();
+    const queryClient = useQueryClient();
+    const { data: user } = useAuthUser();
 
     const { data: course, isLoading } = useQuery({
         queryKey: ['courses', slug],
         queryFn: () => fetchCourse(slug),
     });
 
-    const { data: curriculum } = useQuery({
+    const { data: learn } = useQuery({
         queryKey: ['courses', slug, 'curriculum'],
-        queryFn: () => fetchCourseCurriculum(slug),
+        queryFn: () => fetchLearnCurriculum(slug),
         enabled: !!course,
+    });
+
+    const enroll = useMutation({
+        mutationFn: () => enrollInCourse(slug),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['courses', slug, 'curriculum'] });
+            navigate(`/learn/${slug}`);
+        },
     });
 
     if (isLoading) return <p className="text-gray-500">Loading…</p>;
     if (!course) return <p className="text-gray-500">Course not found.</p>;
+
+    const curriculum = learn?.course;
+    const enrollment = learn?.enrollment;
+    const isFree = course.price <= 0;
 
     return (
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
@@ -71,17 +89,31 @@ export default function CourseDetailPage() {
 
             <aside className="rounded-lg border bg-white p-4 shadow-sm">
                 <div className="mb-4 aspect-video rounded bg-gray-100" />
-                <p className="text-2xl font-bold text-gray-900">
-                    {course.price > 0 ? `$${course.price.toFixed(2)}` : 'Free'}
-                </p>
-                <button
-                    type="button"
-                    className="mt-4 w-full rounded bg-gray-900 py-2 text-white"
-                    disabled
-                    title="Enrollment lands in Phase 2"
-                >
-                    Enroll
-                </button>
+                <p className="text-2xl font-bold text-gray-900">{isFree ? 'Free' : `$${Number(course.price).toFixed(2)}`}</p>
+
+                {enrollment ? (
+                    <button
+                        type="button"
+                        onClick={() => navigate(`/learn/${slug}`)}
+                        className="mt-4 w-full rounded bg-gray-900 py-2 text-white"
+                    >
+                        Continue learning ({enrollment.progress_percent}%)
+                    </button>
+                ) : (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (!user) return navigate('/login', { state: { from: { pathname: `/courses/${slug}` } } });
+                            enroll.mutate();
+                        }}
+                        disabled={!isFree || enroll.isPending}
+                        title={!isFree ? 'Paid checkout isn\'t available yet' : undefined}
+                        className="mt-4 w-full rounded bg-gray-900 py-2 text-white disabled:opacity-50"
+                    >
+                        {isFree ? 'Enroll for free' : 'Checkout coming soon'}
+                    </button>
+                )}
+                {enroll.isError && <p className="mt-2 text-sm text-red-600">{generalError(enroll.error)}</p>}
             </aside>
         </div>
     );

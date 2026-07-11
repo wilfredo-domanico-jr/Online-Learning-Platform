@@ -19,6 +19,11 @@ export default function AppLayout() {
                         <Link to="/courses" className="text-sm text-gray-600 hover:text-gray-900">
                             Browse
                         </Link>
+                        {user && (
+                            <Link to="/my-learning" className="text-sm text-gray-600 hover:text-gray-900">
+                                My Learning
+                            </Link>
+                        )}
                         {user && !isInstructor && (
                             <Link to="/instructor/apply" className="text-sm text-gray-600 hover:text-gray-900">
                                 Teach

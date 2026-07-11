@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\CourseResource;
 use App\Models\Category;
 use App\Models\Course;
+use App\Models\LessonProgress;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -56,19 +57,42 @@ class CourseController extends Controller
 
     /**
      * Course curriculum (sections + lessons). Lesson content is locked unless
-     * the requester owns the course, is an admin, or the lesson is previewable.
+     * the requester owns the course, is an admin, is enrolled, or the lesson
+     * is previewable. When enrolled, each lesson also reports completion
+     * status and video resume position for the course player.
      */
     public function curriculum(Request $request, string $slug): JsonResponse
     {
         $course = $this->findVisibleBySlug($request, $slug);
 
-        $canViewLockedContent = $request->user()?->id === $course->instructor_id
-            || $request->user()?->hasRole('admin');
+        $user = $request->user();
+        $enrollment = $user ? $course->enrollments()->where('user_id', $user->id)->first() : null;
+
+        $canViewLockedContent = $user?->id === $course->instructor_id
+            || $user?->hasRole('admin')
+            || $enrollment !== null;
         $request->attributes->set('can_view_locked_lesson_content', $canViewLockedContent);
+
+        if ($enrollment) {
+            $progressMap = LessonProgress::where('enrollment_id', $enrollment->id)
+                ->get()
+                ->keyBy('lesson_id')
+                ->map(fn (LessonProgress $p) => [
+                    'completed' => $p->completed_at !== null,
+                    'last_position_seconds' => $p->last_position_seconds,
+                ]);
+            $request->attributes->set('lesson_progress_map', $progressMap);
+        }
 
         $course->load(['sections.lessons.videoDetail', 'sections.lessons.article', 'sections.lessons.attachments']);
 
-        return (new CourseResource($course))->response();
+        return (new CourseResource($course))
+            ->additional(['enrollment' => $enrollment ? [
+                'id' => $enrollment->id,
+                'progress_percent' => $enrollment->progress_percent,
+                'completed_at' => $enrollment->completed_at,
+            ] : null])
+            ->response();
     }
 
     private function findVisibleBySlug(Request $request, string $slug, array $with = []): Course

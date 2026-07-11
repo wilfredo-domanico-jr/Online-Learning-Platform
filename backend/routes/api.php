@@ -5,11 +5,13 @@ use App\Http\Controllers\Api\V1\Admin\InstructorApplicationController as AdminIn
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CourseController;
+use App\Http\Controllers\Api\V1\EnrollmentController;
 use App\Http\Controllers\Api\V1\Instructor\CourseController as InstructorCourseController;
 use App\Http\Controllers\Api\V1\Instructor\CourseSectionController;
 use App\Http\Controllers\Api\V1\Instructor\LessonContentController;
 use App\Http\Controllers\Api\V1\Instructor\LessonController;
 use App\Http\Controllers\Api\V1\InstructorApplicationController;
+use App\Http\Controllers\Api\V1\LearningController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -40,6 +42,12 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/instructor-applications', [InstructorApplicationController::class, 'store']);
         Route::get('/instructor-applications/me', [InstructorApplicationController::class, 'me']);
+
+        Route::get('/my/enrollments', [EnrollmentController::class, 'index']);
+        Route::post('/courses/{slug}/enroll', [EnrollmentController::class, 'store']);
+
+        Route::post('/lessons/{lesson}/complete', [LearningController::class, 'complete']);
+        Route::post('/lessons/{lesson}/progress', [LearningController::class, 'updateProgress']);
 
         Route::middleware('role:instructor')->prefix('instructor')->group(function () {
             Route::get('/courses', [InstructorCourseController::class, 'index']);
